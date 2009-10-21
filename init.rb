@@ -1,0 +1,1 @@
+require 'binary_column_table'

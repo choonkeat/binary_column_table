@@ -1,0 +1,63 @@
+= BinaryColumnTable
+
+For whatever reason you need or choose to store blobs in databases. Yet, you
+do not wish to mix blob columns in the same table as your regular attributes.
+BinaryColumnTable helps you store ALL blobs in a separate table, managed
+transparently by an ActiveRecord model. Optionally, it helps you record the
+content-type of the blob.
+
+This plugin does nothing else.
+
+== INSTALL
+
+In your existing model, e.g. Member, declare your binary columns (note: these
+columns does not exist in your "members" table)
+
+  class Member < ActiveRecord::Base
+    has_binary_columns :photo, :resume, :secret_zip
+  end
+
+For that to work, generate a model called BinaryColumn to contain these blobs.
+
+  ./script/generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string content:binary
+
+Finally, modify the generated app/models/binary_column.rb to have a polymorphic "belongs_to"
+
+  class BinaryColumn < ActiveRecord::Base
+    belongs_to :original_table, :polymorphic => true
+  end
+
+== USAGE
+
+The usage is simple and straight-forward as-if the columns are in the original table.
+
+  m = Member.new
+  m.name   = "Michael"
+  m.photo  = IO.read("avatar.png")   #=> binary string
+  m.resume = File.open("resume.doc") #=> IO object (e.g. when uploading via http form)
+  m.save!
+  #=> creates a record in "members" table, saving "Michael" into the "name" column
+  #=> creates a record in "binary_columns" table, saving "avatar.png" binary into "content" column
+  #=> creates a record in "binary_columns" table, saving "resume.doc" binary into "content" column
+  
+  m = Member.last
+  m.name         #=> "Michael"
+  m.photo        #=> binary content of the "avatar.png" file
+  m.resume       #=> binary content of the "resume.doc"
+
+Note: If you MUST have your binary column table called something other than
+"binary_columns", just edit ActiveRecord::Extensions::BinaryColumnTable::CLASS_NAME
+
+Note: Population of the "content_type" attribute requires "file" command on OS, i.e. most Unix
+otherwise, remove "content_type" column from table definition to skip content_type extraction
+
+Note: Accessing the content_type attribute is not sugar coated, add a "_binary_column.content_type"
+suffix. i.e. from our earlier example
+
+  m = Member.last
+  m.photo                             #=> binary content of the "avatar.png" file
+  m.photo_binary_column.content_type  #=> "image/png; charset=binary"
+
+== License
+
+Copyright (c) 2009 Chew Choon Keat, released under the MIT license

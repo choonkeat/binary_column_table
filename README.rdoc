@@ -20,6 +20,7 @@ columns does not exist in your "members" table)
 For that to work, generate a model called BinaryColumn to contain these blobs.
 
   ./script/generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string original_filename:string content:binary
+  rake db:migrate
 
 Finally, modify the generated app/models/binary_column.rb to have a polymorphic "belongs_to"
 
@@ -44,9 +45,11 @@ The usage is simple and straight-forward as-if the columns are in the original t
   #=> creates a record in "binary_columns" table, saving "resume.doc" binary into "content" column
   
   m = Member.last
-  m.name         #=> "Michael"
-  m.photo        #=> binary content of the "avatar.png" file
-  m.resume       #=> binary content of the "resume.doc"
+  m.name                            #=> "Michael"
+  m.photo_attributes                #=> light-weight loading of BinaryColumn object (excludes BLOB)
+  m.photo_attributes.file_extension #=> "png"
+  m.photo                           #=> binary content of the "avatar.png" file
+  m.resume                          #=> binary content of the "resume.doc"
 
 Note: If you MUST have your binary column table called something other than
 "binary_columns", just edit ActiveRecord::Extensions::BinaryColumnTable::CLASS_NAME
@@ -60,6 +63,28 @@ suffix. i.e. from our earlier example
   m = Member.last
   m.photo                             #=> binary content of the "avatar.png" file
   m.photo_binary_column.content_type  #=> "image/png; charset=binary"
+
+== Table Index
+
+You may wish to generate index for that table as well
+
+  ./script/generate migration AddIndexesToBinaryColumns
+
+Edit the generated db/migrate/*_add_indexes_to_binary_columns.rb to look like this
+
+  class AddIndexesToBinaryColumns < ActiveRecord::Migration
+    def self.up
+      add_index :binary_columns, [:original_table_id, :original_table_type, :name], :name => 'by_original_table_name'
+    end
+
+    def self.down
+      remove_index :binary_columns, :name => 'by_original_table_name'
+    end
+  end
+
+Then run migration to commit the schema change
+
+  rake db:migrate
 
 == License
 

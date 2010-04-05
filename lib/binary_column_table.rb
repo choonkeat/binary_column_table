@@ -13,6 +13,12 @@ module ActiveRecord
                 :as => "original_table",
                 :conditions => {:name => "#{colname}"},
                 :dependent => :delete
+              has_one "#{colname}_attributes",
+                :class_name => BinaryColumnTable::CLASS_NAME,
+                :as => "original_table",
+                :conditions => {:name => "#{colname}"},
+                :readonly => true,
+                :select => (ActiveRecord::Extensions::BinaryColumnTable::CLASS_NAME.constantize.column_names - ["content"]).join(',')
               self.class_eval <<-METHOD
                 def #{colname}
                   self.#{colname}_binary_column.try(:content)

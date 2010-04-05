@@ -19,12 +19,15 @@ columns does not exist in your "members" table)
 
 For that to work, generate a model called BinaryColumn to contain these blobs.
 
-  ./script/generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string content:binary
+  ./script/generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string original_filename:string content:binary
 
 Finally, modify the generated app/models/binary_column.rb to have a polymorphic "belongs_to"
 
   class BinaryColumn < ActiveRecord::Base
     belongs_to :original_table, :polymorphic => true
+    def file_extension
+      self.original_filename.to_s.split('.').last || "bin"
+    end
   end
 
 == USAGE

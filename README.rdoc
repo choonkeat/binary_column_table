@@ -26,7 +26,7 @@ Finally, modify the generated app/models/binary_column.rb to have a polymorphic 
   class BinaryColumn < ActiveRecord::Base
     belongs_to :original_table, :polymorphic => true
     def file_extension
-      self.original_filename.to_s.split('.').last || "bin"
+      self.original_filename.to_s.split('.').last
     end
   end
 

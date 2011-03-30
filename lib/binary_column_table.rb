@@ -21,7 +21,7 @@ module ActiveRecord
                 :select => (ActiveRecord::Extensions::BinaryColumnTable::CLASS_NAME.constantize.column_names - ["content"]).join(',')
               self.class_eval <<-METHOD
                 def #{colname}
-                  self.#{colname}_binary_column.try(:content)
+                  self.#{colname}_binary_column.respond_to?(:content) ? self.#{colname}_binary_column.content : nil
                 end
                 def #{colname}=(val)
                   if not val.blank?

@@ -31,7 +31,7 @@ module ActiveRecord
                     if self.#{colname}_binary_column.respond_to?(:content_type)
                       # optional content_type extraction
                       begin
-                        if val.respond_to?(:path)
+                        if val.respond_to?(:path) && val.path.present?
                           filepath = val.path
                         else
                           Tempfile.open("binary_column_table") {|f| filepath = f.path; f.write self.#{colname}_binary_column.content }

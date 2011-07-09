@@ -19,7 +19,30 @@ columns does not exist in your "members" table)
 
 For that to work, generate a model called BinaryColumn to contain these blobs.
 
-  ./script/generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string original_filename:string content:binary
+  rails generate model BinaryColumn original_table_type:string original_table_id:integer name:string content_type:string original_filename:string content:binary
+
+You may wish to edit the generated migration file to add a custom index to the bottom of the "self.up" method,
+
+  class CreateBinaryColumns < ActiveRecord::Migration
+    def self.up
+      create_table :binary_columns do |t|
+        t.string :original_table_type
+        t.integer :original_table_id
+        t.string :name
+        t.string :content_type
+        t.string :original_filename
+        t.binary :content
+        t.timestamps
+      end
+      add_index :binary_columns, [:id, :name] # add this line
+    end
+    def self.down
+      drop_table :binary_columns
+    end
+  end
+
+Then apply the schema change,
+
   rake db:migrate
 
 Finally, modify the generated app/models/binary_column.rb to have a polymorphic "belongs_to"

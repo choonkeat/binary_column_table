@@ -3,8 +3,8 @@ module ActiveRecord
     module BinaryColumnTable
       CLASS_NAME = "BinaryColumn"
       def self.included(base)
-        base.class_eval do
-          def self.has_binary_columns(*column_names)
+        base.instance_eval do
+          def has_binary_columns(*column_names)
             # 1. create a has_one relationship
             # 2. create accessor methods to wrap has_one usage
             column_names.each do |colname|
@@ -28,18 +28,18 @@ module ActiveRecord
                     self.#{colname}_binary_column ||= #{BinaryColumnTable::CLASS_NAME}.new(:original_table => self, :name => "#{colname}")
                     self.#{colname}_binary_column.original_table_id = nil # ensure this object is saved, even when parent is not dirty
                     self.#{colname}_binary_column.content = val.respond_to?(:read) ? val.read : val
-                    if self.#{colname}_binary_column.respond_to?(:content_type)
-                      # optional content_type extraction
-                      begin
-                        if val.respond_to?(:path) && val.path.present?
-                          filepath = val.path
-                        else
-                          Tempfile.open("binary_column_table") {|f| filepath = f.path; f.write self.#{colname}_binary_column.content }
-                        end
-                        self.#{colname}_binary_column.content_type = IO.popen("file --mime \#{filepath.inspect}") {|io| io.gets.split(/:\s*/).last.strip }
-                        self.#{colname}_binary_column.original_filename = val.original_filename if self.#{colname}_binary_column.respond_to?(:original_filename=) && val.respond_to?(:original_filename)
-                      rescue Exception, IOError
+                    self.#{colname}_binary_column.original_filename = File.basename(val.original_filename) if val.respond_to?(:original_filename) && self.#{colname}_binary_column.respond_to?(:original_filename=)
+                    self.#{colname}_binary_column.content_type = val.content_type if val.respond_to?(:content_type) && self.#{colname}_binary_column.respond_to?(:content_type=)
+                    val.respond_to?(:original_filename) && val.respond_to?(:content_type) || begin
+                      # last-ditch attempt to obtain 'content_type'
+                      if val.respond_to?(:path) && val.path.present?
+                        filepath = val.path
+                      else
+                        Tempfile.open("binary_column_table") {|f| filepath = f.path; f.write(self.#{colname}_binary_column.content); }
                       end
+                      self.#{colname}_binary_column.content_type = IO.popen("file --mime \#{filepath.inspect}") {|io| io.gets.split(/:\s*/).last.strip }
+                    rescue Exception, IOError
+                      # but don't die because this fail
                     end
                   end
                 end
@@ -51,4 +51,3 @@ module ActiveRecord
     end
   end
 end
-ActiveRecord::Base.send(:include, ActiveRecord::Extensions::BinaryColumnTable)

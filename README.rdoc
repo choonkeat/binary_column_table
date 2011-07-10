@@ -34,7 +34,7 @@ You may wish to edit the generated migration file to add a custom index to the b
         t.binary :content
         t.timestamps
       end
-      add_index :binary_columns, [:id, :name] # add this line
+      add_index :binary_columns, [:original_table_id, :original_table_type, :name], :name => :by_owner_field_name # add this line
     end
     def self.down
       drop_table :binary_columns

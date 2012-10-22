@@ -7,6 +7,9 @@ module ActiveRecord
           def has_binary_columns(*column_names)
             # 1. create a has_one relationship
             # 2. create accessor methods to wrap has_one usage
+
+            # Do not run this unless table exists (fix for "rake db:*" tasks)
+            return unless ActiveRecord::Base.connection.table_exists? 'binary_columns'
             column_names.each do |colname|
               has_one "#{colname}_binary_column",
                 :class_name => BinaryColumnTable::CLASS_NAME,
